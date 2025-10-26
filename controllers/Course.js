@@ -339,13 +339,6 @@ exports.editCourse = async (req, res) => {
 		})
 	  }
   
-	  // if (courseDetails.status === "Draft") {
-	  //   return res.status(403).json({
-	  //     success: false,
-	  //     message: `Accessing a draft course is forbidden`,
-	  //   });
-	  // }
-  
 	  let totalDurationInSeconds = 0
 	  courseDetails.courseContent.forEach((content) => {
 		content.subSection.forEach((subSection) => {
@@ -361,9 +354,7 @@ exports.editCourse = async (req, res) => {
 		data: {
 		  courseDetails,
 		  totalDuration,
-		  completedVideos: courseProgressCount?.completedVideos
-			? courseProgressCount?.completedVideos
-			: ["none"],
+		  completedVideos: courseProgressCount?.completedVideos || [],
 		},
 	  })
 	} catch (error) {
@@ -470,53 +461,58 @@ exports.deleteCourse = async (req, res) => {
 
 //mark lecture as completed
 exports.markLectureAsComplete = async (req, res) => {
-	const { courseId, subSectionId, userId } = req.body
-	if (!courseId || !subSectionId || !userId) {
+	const { courseId, subSectionId } = req.body
+	const userId = req.user.id
+	
+	if (!courseId || !subSectionId) {
 	  return res.status(400).json({
 		success: false,
 		message: "Missing required fields",
 	  })
 	}
+	
 	try {
-	progressAlreadyExists = await CourseProgress.findOne({
-				  userID: userId,
-				  courseID: courseId,
-				})
-	  const completedVideos = progressAlreadyExists.completedVideos
-	  if (!completedVideos.includes(subSectionId)) {
-		await CourseProgress.findOneAndUpdate(
-		  {
+		let progressAlreadyExists = await CourseProgress.findOne({
 			userID: userId,
 			courseID: courseId,
-		  },
-		  {
-			$push: { completedVideos: subSectionId },
-		  }
-		)
-	  }else{
-		return res.status(400).json({
-			success: false,
-			message: "Lecture already marked as complete",
-		  })
-	  }
-	  await CourseProgress.findOneAndUpdate(
-		{
-		  userId: userId,
-		  courseID: courseId,
-		},
-		{
-		  completedVideos: completedVideos,
+		})
+		
+		// If no progress exists, create new one
+		if (!progressAlreadyExists) {
+			progressAlreadyExists = await CourseProgress.create({
+				userID: userId,
+				courseID: courseId,
+				completedVideos: [subSectionId]
+			})
+		} else {
+			const completedVideos = progressAlreadyExists.completedVideos || []
+			
+			if (!completedVideos.includes(subSectionId)) {
+				await CourseProgress.findOneAndUpdate(
+					{
+						userID: userId,
+						courseID: courseId,
+					},
+					{
+						$push: { completedVideos: subSectionId },
+					}
+				)
+			} else {
+				return res.status(400).json({
+					success: false,
+					message: "Lecture already marked as complete",
+				})
+			}
 		}
-	  )
-	return res.status(200).json({
-	  success: true,
-	  message: "Lecture marked as complete",
-	})
+		
+		return res.status(200).json({
+			success: true,
+			message: "Lecture marked as complete",
+		})
 	} catch (error) {
-	  return res.status(500).json({
-		success: false,
-		message: error.message,
-	  })
+		return res.status(500).json({
+			success: false,
+			message: error.message,
+		})
 	}
-
 }

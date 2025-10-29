@@ -48,7 +48,7 @@ exports.capturePayment = async (req, res) => {
         }
         totalAmount += course.price;
       } catch (error) {
-        console.error(error);
+        console.error(" some error   ",error);
         return res.status(500).json({
           success: false,
           message: error.message,
@@ -74,7 +74,7 @@ exports.capturePayment = async (req, res) => {
         amount: paymentResponse.amount,
       });
     } catch (error) {
-      console.error(error);
+      console.error("payment error=", error);
       return res.status(500).json({
         success: false,
         message: error.message,

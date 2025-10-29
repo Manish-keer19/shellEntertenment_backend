@@ -1,6 +1,6 @@
 const express = require("express");
 const app = express();
-
+const path = require("path");
 const userRoutes = require("./routes/User");
 const paymentRoutes = require("./routes/Payments");
 const profileRoutes = require("./routes/Profile");
@@ -21,6 +21,7 @@ database.connect();
 
 app.use(express.json());
 app.use(cookieParser());
+
 
 let corsOrigins;
 try {
@@ -47,17 +48,26 @@ app.use(
 
 cloudnairyconnect();
 
+
+
+// // ✅ Serve static files from "static/dist"
+// app.use(express.static(path.join(__dirname, 'static', 'dist')));
+
+// // ✅ Fallback route — send index.html for root
+// app.get('/', (req, res) => {
+//   res.sendFile(path.join(__dirname, 'static', 'dist', 'index.html'));
+// });
+
+
+app.get('/', (req, res) => {
+ res.send('KYO RE MADERCHOD YAHA KYA KAR RAHA HAI?');
+});
 app.use("/api/v1/auth", userRoutes);
 app.use("/api/v1/payment", paymentRoutes);
 app.use("/api/v1/profile", profileRoutes);
 app.use("/api/v1/course", CourseRoutes);
 app.use("/api/v1/contact", require("./routes/ContactUs"));
 
-app.get("/", (req, res) => {
-  res.status(200).json({
-    message: "Welcome to the API",
-  });
-});
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
